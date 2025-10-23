@@ -3,9 +3,10 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IReferral extends Document {
   referrer: mongoose.Types.ObjectId;
   referred: mongoose.Types.ObjectId;
-  status: 'pending' | 'converted' | 'expired';
+  status: 'pending' | 'completed' | 'converted' | 'expired';
   creditsEarned: number;
   convertedAt?: Date;
+  completedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +24,7 @@ const referralSchema = new Schema<IReferral>({
   },
   status: {
     type: String,
-    enum: ['pending', 'converted', 'expired'],
+    enum: ['pending', 'completed', 'converted', 'expired'],
     default: 'pending'
   },
   creditsEarned: {
@@ -32,6 +33,10 @@ const referralSchema = new Schema<IReferral>({
     min: [0, 'Credits earned cannot be negative']
   },
   convertedAt: {
+    type: Date,
+    default: null
+  },
+  completedAt: {
     type: Date,
     default: null
   }

@@ -1,10 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
 import { verifyToken, JWTPayload } from '../utils/jwt';
-import { User } from '../models/User';
+import { User, IUser } from '../models/User';
 import { asyncHandler } from './errorHandler';
 
 export interface AuthRequest extends Request {
-  user?: any;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    referralCode: string;
+    credits: number;
+  };
+}
+
+// Extend Express Request interface globally
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        referralCode: string;
+        credits: number;
+      };
+    }
+  }
 }
 
 export const authenticate = asyncHandler(async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
@@ -39,7 +62,14 @@ export const authenticate = asyncHandler(async (req: AuthRequest, res: Response,
     }
 
     // Add user to request object
-    req.user = user;
+    req.user = {
+      id: user._id.toString(),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      referralCode: user.referralCode,
+      credits: user.credits
+    };
     next();
   } catch (error) {
     res.status(401).json({
@@ -62,7 +92,14 @@ export const optionalAuth = asyncHandler(async (req: AuthRequest, res: Response,
       const decoded: JWTPayload = verifyToken(token);
       const user = await User.findById(decoded.userId).select('-password');
       if (user) {
-        req.user = user;
+        req.user = {
+          id: user._id.toString(),
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          referralCode: user.referralCode,
+          credits: user.credits
+        };
       }
     } catch (error) {
       // Token is invalid, but we continue without user

@@ -10,7 +10,7 @@ export interface JWTPayload {
 
 export const generateToken = (user: IUser): string => {
   const payload: JWTPayload = {
-    userId: user._id,
+    userId: user._id.toString(),
     email: user.email
   };
 
@@ -26,7 +26,7 @@ export const generateToken = (user: IUser): string => {
 
 export const generateRefreshToken = (user: IUser): string => {
   const payload: JWTPayload = {
-    userId: user._id,
+    userId: user._id.toString(),
     email: user.email
   };
 

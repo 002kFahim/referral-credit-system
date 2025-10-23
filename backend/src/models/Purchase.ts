@@ -5,8 +5,13 @@ export interface IPurchase extends Document {
   productName: string;
   amount: number;
   currency: string;
+  status: string;
   isFirstPurchase: boolean;
   referralCreditsAwarded: boolean;
+  referralCredit?: {
+    referrer: mongoose.Types.ObjectId;
+    amount: number;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +40,11 @@ const purchaseSchema = new Schema<IPurchase>({
     default: 'USD',
     enum: ['USD', 'EUR', 'GBP']
   },
+  status: {
+    type: String,
+    default: 'completed',
+    enum: ['pending', 'completed', 'failed']
+  },
   isFirstPurchase: {
     type: Boolean,
     default: false
@@ -42,6 +52,16 @@ const purchaseSchema = new Schema<IPurchase>({
   referralCreditsAwarded: {
     type: Boolean,
     default: false
+  },
+  referralCredit: {
+    referrer: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    amount: {
+      type: Number,
+      min: 0
+    }
   }
 }, {
   timestamps: true
