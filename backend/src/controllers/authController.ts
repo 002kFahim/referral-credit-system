@@ -1,20 +1,20 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
-import { User } from '../models/User';
-import { Referral } from '../models/Referral';
-import { generateToken } from '../utils/jwt';
+import { Request, Response } from "express";
+import bcrypt from "bcryptjs";
+import { User } from "../models/User";
+import { Referral } from "../models/Referral";
+import { generateToken } from "../utils/jwt";
 
 // Generate unique referral code
 const generateReferralCode = async (): Promise<string> => {
   let code: string;
   let exists: boolean;
-  
+
   do {
     code = Math.random().toString(36).substring(2, 8).toUpperCase();
     const existingUser = await User.findOne({ referralCode: code });
     exists = !!existingUser;
   } while (exists);
-  
+
   return code;
 };
 
@@ -25,9 +25,9 @@ export const register = async (req: Request, res: Response) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User already exists with this email' 
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email",
       });
     }
 
@@ -36,9 +36,9 @@ export const register = async (req: Request, res: Response) => {
     if (referralCode) {
       referrer = await User.findOne({ referralCode });
       if (!referrer) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid referral code' 
+        return res.status(400).json({
+          success: false,
+          message: "Invalid referral code",
         });
       }
     }
@@ -57,7 +57,7 @@ export const register = async (req: Request, res: Response) => {
       password: hashedPassword,
       referralCode: newReferralCode,
       referredBy: referrer?._id || null,
-      credits: 0
+      credits: 0,
     });
 
     await user.save();
@@ -67,7 +67,7 @@ export const register = async (req: Request, res: Response) => {
       const referral = new Referral({
         referrer: referrer._id,
         referred: user._id,
-        status: 'pending'
+        status: "pending",
       });
       await referral.save();
     }
@@ -77,7 +77,7 @@ export const register = async (req: Request, res: Response) => {
 
     return res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: "User registered successfully",
       data: {
         user: {
           id: user._id,
@@ -85,16 +85,16 @@ export const register = async (req: Request, res: Response) => {
           lastName: user.lastName,
           email: user.email,
           referralCode: user.referralCode,
-          credits: user.credits
+          credits: user.credits,
         },
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
-    console.error('Registration error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
+    console.error("Registration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };
@@ -104,20 +104,20 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // Find user by email and include password
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select("+password");
     if (!user || !user.password) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
       });
     }
 
     // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ 
-        success: false, 
-        message: 'Invalid credentials' 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
       });
     }
 
@@ -126,7 +126,7 @@ export const login = async (req: Request, res: Response) => {
 
     return res.json({
       success: true,
-      message: 'Login successful',
+      message: "Login successful",
       data: {
         user: {
           id: user._id,
@@ -134,16 +134,16 @@ export const login = async (req: Request, res: Response) => {
           lastName: user.lastName,
           email: user.email,
           referralCode: user.referralCode,
-          credits: user.credits
+          credits: user.credits,
         },
-        token
-      }
+        token,
+      },
     });
   } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
+    console.error("Login error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };
@@ -151,12 +151,12 @@ export const login = async (req: Request, res: Response) => {
 export const getProfile = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
-    
-    const user = await User.findById(userId).select('-password');
+
+    const user = await User.findById(userId).select("-password");
     if (!user) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'User not found' 
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
       });
     }
 
@@ -170,15 +170,15 @@ export const getProfile = async (req: Request, res: Response) => {
           email: user.email,
           referralCode: user.referralCode,
           credits: user.credits,
-          createdAt: user.createdAt
-        }
-      }
+          createdAt: user.createdAt,
+        },
+      },
     });
   } catch (error) {
-    console.error('Get profile error:', error);
-    return res.status(500).json({ 
-      success: false, 
-      message: 'Internal server error' 
+    console.error("Get profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 };

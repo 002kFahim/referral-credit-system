@@ -1,5 +1,5 @@
-import jwt from 'jsonwebtoken';
-import { IUser } from '../models/User';
+import jwt from "jsonwebtoken";
+import { IUser } from "../models/User";
 
 export interface JWTPayload {
   userId: string;
@@ -11,40 +11,40 @@ export interface JWTPayload {
 export const generateToken = (user: IUser): string => {
   const payload: JWTPayload = {
     userId: user._id.toString(),
-    email: user.email
+    email: user.email,
   };
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
+    throw new Error("JWT_SECRET is not defined in environment variables");
   }
 
   return jwt.sign(payload, secret, {
-    expiresIn: process.env.JWT_EXPIRE || '7d'
+    expiresIn: process.env.JWT_EXPIRE || "7d",
   } as any);
 };
 
 export const generateRefreshToken = (user: IUser): string => {
   const payload: JWTPayload = {
     userId: user._id.toString(),
-    email: user.email
+    email: user.email,
   };
 
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
+    throw new Error("JWT_SECRET is not defined in environment variables");
   }
 
   return jwt.sign(payload, secret, {
-    expiresIn: '30d'
+    expiresIn: "30d",
   } as any);
 };
 
 export const verifyToken = (token: string): JWTPayload => {
   const secret = process.env.JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not defined in environment variables');
+    throw new Error("JWT_SECRET is not defined in environment variables");
   }
-  
+
   return jwt.verify(token, secret) as JWTPayload;
 };
