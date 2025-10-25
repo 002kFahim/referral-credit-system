@@ -2,16 +2,19 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPurchase extends Document {
   user: mongoose.Types.ObjectId;
-  productName: string;
+  productName?: string; // Made optional for backward compatibility
+  description: string; // New field to match frontend
   amount: number;
   currency: string;
-  status: string;
+  status: "pending" | "completed" | "failed";
+  creditsUsed: number; // New field to track credits used
   isFirstPurchase: boolean;
   referralCreditsAwarded: boolean;
   referralCredit?: {
     referrer: mongoose.Types.ObjectId;
     amount: number;
   };
+  completedAt?: Date; // New field to track completion time
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,9 +28,14 @@ const purchaseSchema = new Schema<IPurchase>(
     },
     productName: {
       type: String,
-      required: [true, "Product name is required"],
       trim: true,
       maxlength: [100, "Product name cannot exceed 100 characters"],
+    },
+    description: {
+      type: String,
+      required: [true, "Description is required"],
+      trim: true,
+      maxlength: [200, "Description cannot exceed 200 characters"],
     },
     amount: {
       type: Number,
@@ -43,8 +51,13 @@ const purchaseSchema = new Schema<IPurchase>(
     },
     status: {
       type: String,
-      default: "completed",
+      default: "pending",
       enum: ["pending", "completed", "failed"],
+    },
+    creditsUsed: {
+      type: Number,
+      default: 0,
+      min: [0, "Credits used cannot be negative"],
     },
     isFirstPurchase: {
       type: Boolean,
@@ -63,6 +76,10 @@ const purchaseSchema = new Schema<IPurchase>(
         type: Number,
         min: 0,
       },
+    },
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

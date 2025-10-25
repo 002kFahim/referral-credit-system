@@ -13,16 +13,23 @@ const router = express.Router();
 router.post(
   "/",
   [
-    body("productName")
+    body("description")
       .trim()
-      .isLength({ min: 1 })
-      .withMessage("Product name is required"),
+      .isLength({ min: 1, max: 200 })
+      .withMessage(
+        "Description is required and must be less than 200 characters"
+      ),
     body("amount")
       .isFloat({ min: 0.01 })
       .withMessage("Amount must be greater than 0"),
     body("currency")
+      .optional()
       .isIn(["USD", "EUR", "GBP"])
       .withMessage("Invalid currency"),
+    body("creditsUsed")
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage("Credits used must be a non-negative integer"),
     handleValidationErrors,
   ],
   authenticate,

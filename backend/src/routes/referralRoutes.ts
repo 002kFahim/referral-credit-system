@@ -4,6 +4,7 @@ import {
   getReferralStats,
   validateReferralCode,
   getReferralHistory,
+  getRecentReferrals,
 } from "../controllers/referralController";
 import { authenticate, optionalAuth } from "../middleware/auth";
 import { handleValidationErrors } from "../utils/validation";
@@ -12,6 +13,9 @@ const router = express.Router();
 
 // Get referral statistics (protected)
 router.get("/stats", authenticate, getReferralStats);
+
+// Get recent referrals (protected)
+router.get("/recent", authenticate, getRecentReferrals);
 
 // Validate referral code (public)
 router.get(

@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { User } from "../models/User";
 import { Referral } from "../models/Referral";
 import { generateToken } from "../utils/jwt";
+import { emailService } from "../services/emailService";
 
 // Generate unique referral code
 const generateReferralCode = async (): Promise<string> => {
@@ -70,6 +71,17 @@ export const register = async (req: Request, res: Response) => {
         status: "pending",
       });
       await referral.save();
+
+      // Send email notifications (async, don't wait for completion)
+      emailService
+        .sendReferralSuccessEmail(referrer, user)
+        .catch(console.error);
+      emailService
+        .sendReferralWelcomeEmail(user, referrer)
+        .catch(console.error);
+    } else {
+      // Send welcome email for regular registration
+      emailService.sendWelcomeEmail(user).catch(console.error);
     }
 
     // Generate JWT token

@@ -108,6 +108,39 @@ export const validateReferralCode = async (req: Request, res: Response) => {
   }
 };
 
+export const getRecentReferrals = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const limit = parseInt(req.query.limit as string) || 5;
+
+    // Get recent referrals
+    const referrals = await Referral.find({ referrer: userId })
+      .populate("referred", "firstName lastName email")
+      .sort({ createdAt: -1 })
+      .limit(limit);
+
+    // Return referrals directly as array for frontend compatibility
+    res.json(
+      referrals.map((ref: any) => ({
+        _id: ref._id,
+        firstName: ref.referred.firstName,
+        lastName: ref.referred.lastName,
+        email: ref.referred.email,
+        creditsEarned: ref.creditsEarned || 10, // Default credit amount
+        status: ref.status,
+        createdAt: ref.createdAt,
+        completedAt: ref.completedAt,
+      }))
+    );
+  } catch (error) {
+    console.error("Get recent referrals error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 export const getReferralHistory = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.id;
@@ -126,25 +159,20 @@ export const getReferralHistory = async (req: Request, res: Response) => {
     const totalReferrals = await Referral.countDocuments({ referrer: userId });
     const totalPages = Math.ceil(totalReferrals / limit);
 
-    res.json({
-      success: true,
-      data: {
-        referrals: referrals.map((ref) => ({
-          id: ref._id,
-          referredUser: ref.referred,
-          status: ref.status,
-          createdAt: ref.createdAt,
-          completedAt: ref.completedAt,
-        })),
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalReferrals,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-        },
-      },
-    });
+    // Return referrals directly as array for frontend compatibility
+    res.json(
+      referrals.map((ref: any) => ({
+        _id: ref._id,
+        firstName: ref.referred.firstName,
+        lastName: ref.referred.lastName,
+        email: ref.referred.email,
+        creditsEarned: ref.creditsEarned || 10, // Default credit amount
+        status: ref.status,
+        createdAt: ref.createdAt,
+        completedAt: ref.completedAt,
+        purchaseDate: ref.completedAt, // Use completedAt as purchaseDate for frontend
+      }))
+    );
   } catch (error) {
     console.error("Get referral history error:", error);
     res.status(500).json({

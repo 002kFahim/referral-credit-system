@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Purchase } from "../models/Purchase";
 import { User } from "../models/User";
 import { Referral } from "../models/Referral";
+import { emailService } from "../services/emailService";
 
 export const createPurchase = async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
@@ -10,15 +11,37 @@ export const createPurchase = async (req: Request, res: Response) => {
   try {
     await session.withTransaction(async () => {
       const userId = req.user?.id;
-      const { productName, amount, currency } = req.body;
+      const {
+        description,
+        amount,
+        currency = "USD",
+        creditsUsed = 0,
+      } = req.body;
+
+      // Validate user has enough credits if using credits
+      if (creditsUsed > 0) {
+        const user = await User.findById(userId).session(session);
+        if (!user || user.credits < creditsUsed) {
+          throw new Error("Insufficient credits");
+        }
+
+        // Deduct credits from user
+        await User.findByIdAndUpdate(
+          userId,
+          { $inc: { credits: -creditsUsed } },
+          { session }
+        );
+      }
 
       // Create purchase
       const purchase = new Purchase({
         user: userId,
-        productName,
+        description,
         amount,
         currency,
-        status: "completed",
+        creditsUsed,
+        status: "completed", // Auto-complete for demo purposes
+        completedAt: new Date(),
       });
 
       await purchase.save({ session });
@@ -37,10 +60,10 @@ export const createPurchase = async (req: Request, res: Response) => {
 
         // Award credits to referrer (10% of purchase amount)
         const creditAmount = Math.floor(amount * 0.1);
-        await User.findByIdAndUpdate(
+        const referrerUser = await User.findByIdAndUpdate(
           referral.referrer,
           { $inc: { credits: creditAmount } },
-          { session }
+          { session, new: true }
         );
 
         // Store credit information in purchase
@@ -49,29 +72,53 @@ export const createPurchase = async (req: Request, res: Response) => {
           amount: creditAmount,
         };
         await purchase.save({ session });
+
+        // Send email notification to referrer (async, don't wait)
+        if (referrerUser && req.user) {
+          emailService
+            .sendCreditsEarnedEmail(referrerUser, creditAmount, {
+              name: `${req.user.firstName} ${req.user.lastName}`,
+              email: req.user.email,
+              amount: amount,
+              description: description,
+            })
+            .catch(console.error);
+        }
       }
 
       res.status(201).json({
         success: true,
         message: "Purchase created successfully",
         data: {
-          purchase: {
-            id: purchase._id,
-            productName: purchase.productName,
-            amount: purchase.amount,
-            currency: purchase.currency,
-            status: purchase.status,
-            createdAt: purchase.createdAt,
-            referralCredit: purchase.referralCredit,
-          },
+          _id: purchase._id,
+          description: purchase.description,
+          amount: purchase.amount,
+          currency: purchase.currency,
+          status: purchase.status,
+          creditsUsed: purchase.creditsUsed,
+          createdAt: purchase.createdAt,
+          completedAt: purchase.completedAt,
+          referralCredit: purchase.referralCredit,
         },
       });
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Create purchase error:", error);
-    res.status(500).json({
+
+    let statusCode = 500;
+    let message = "Internal server error";
+
+    if (error.message === "Insufficient credits") {
+      statusCode = 400;
+      message = "Insufficient credits for this purchase";
+    } else if (error.name === "ValidationError") {
+      statusCode = 400;
+      message = "Invalid purchase data";
+    }
+
+    res.status(statusCode).json({
       success: false,
-      message: "Internal server error",
+      message,
     });
   } finally {
     await session.endSession();
@@ -101,30 +148,20 @@ export const getPurchaseHistory = async (req: Request, res: Response) => {
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
 
-    res.json({
-      success: true,
-      data: {
-        purchases: purchases.map((purchase) => ({
-          id: purchase._id,
-          productName: purchase.productName,
-          amount: purchase.amount,
-          currency: purchase.currency,
-          status: purchase.status,
-          createdAt: purchase.createdAt,
-          referralCredit: purchase.referralCredit,
-        })),
-        summary: {
-          totalSpent: totalSpent[0]?.total || 0,
-          totalPurchases,
-        },
-        pagination: {
-          currentPage: page,
-          totalPages,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-        },
-      },
-    });
+    // Return purchases directly as array for frontend compatibility
+    res.json(
+      purchases.map((purchase) => ({
+        _id: purchase._id,
+        description: purchase.description,
+        amount: purchase.amount,
+        currency: purchase.currency,
+        status: purchase.status,
+        creditsUsed: purchase.creditsUsed,
+        createdAt: purchase.createdAt,
+        completedAt: purchase.completedAt,
+        referralCredit: purchase.referralCredit,
+      }))
+    );
   } catch (error) {
     console.error("Get purchase history error:", error);
     res.status(500).json({
