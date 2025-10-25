@@ -17,7 +17,7 @@ export default function Home() {
           animate={{ opacity: 1, x: 0 }}
           className="text-2xl font-bold text-gray-900 dark:text-white"
         >
-          FileSure
+          ReferLink
         </motion.div>
 
         <div className="flex items-center gap-4">

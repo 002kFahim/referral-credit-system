@@ -1,0 +1,182 @@
+<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .class-box { fill: #f8f9fa; stroke: #333; stroke-width: 2; }
+      .class-title { fill: #333; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
+      .class-attribute { fill: #333; font-family: Arial, sans-serif; font-size: 12px; }
+      .class-method { fill: #333; font-family: Arial, sans-serif; font-size: 12px; }
+      .relationship { stroke: #333; stroke-width: 2; fill: none; }
+      .arrow { fill: #333; }
+      .composition { stroke: #333; stroke-width: 2; fill: #333; }
+    </style>
+  </defs>
+  
+  <!-- User Class -->
+  <g id="user-class">
+    <rect x="50" y="50" width="250" height="200" class="class-box"/>
+    <text x="175" y="70" text-anchor="middle" class="class-title">User</text>
+    <line x1="50" y1="80" x2="300" y2="80" stroke="#333" stroke-width="1"/>
+    
+    <!-- Attributes -->
+    <text x="60" y="100" class="class-attribute">- _id: ObjectId</text>
+    <text x="60" y="115" class="class-attribute">- firstName: string</text>
+    <text x="60" y="130" class="class-attribute">- lastName: string</text>
+    <text x="60" y="145" class="class-attribute">- email: string</text>
+    <text x="60" y="160" class="class-attribute">- password: string</text>
+    <text x="60" y="175" class="class-attribute">- referralCode: string</text>
+    <text x="60" y="190" class="class-attribute">- referredBy: ObjectId</text>
+    <text x="60" y="205" class="class-attribute">- credits: number</text>
+    <text x="60" y="220" class="class-attribute">- createdAt: Date</text>
+    
+    <line x1="50" y1="230" x2="300" y2="230" stroke="#333" stroke-width="1"/>
+    
+    <!-- Methods -->
+    <text x="60" y="245" class="class-method">+ comparePassword(password): boolean</text>
+  </g>
+  
+  <!-- Referral Class -->
+  <g id="referral-class">
+    <rect x="400" y="50" width="250" height="180" class="class-box"/>
+    <text x="525" y="70" text-anchor="middle" class="class-title">Referral</text>
+    <line x1="400" y1="80" x2="650" y2="80" stroke="#333" stroke-width="1"/>
+    
+    <!-- Attributes -->
+    <text x="410" y="100" class="class-attribute">- _id: ObjectId</text>
+    <text x="410" y="115" class="class-attribute">- referrer: ObjectId</text>
+    <text x="410" y="130" class="class-attribute">- referred: ObjectId</text>
+    <text x="410" y="145" class="class-attribute">- status: string</text>
+    <text x="410" y="160" class="class-attribute">- creditsEarned: number</text>
+    <text x="410" y="175" class="class-attribute">- createdAt: Date</text>
+    <text x="410" y="190" class="class-attribute">- completedAt: Date</text>
+    
+    <line x1="400" y1="200" x2="650" y2="200" stroke="#333" stroke-width="1"/>
+    
+    <!-- Methods -->
+    <text x="410" y="215" class="class-method">+ markAsCompleted(): void</text>
+  </g>
+  
+  <!-- Purchase Class -->
+  <g id="purchase-class">
+    <rect x="750" y="50" width="250" height="200" class="class-box"/>
+    <text x="875" y="70" text-anchor="middle" class="class-title">Purchase</text>
+    <line x1="750" y1="80" x2="1000" y2="80" stroke="#333" stroke-width="1"/>
+    
+    <!-- Attributes -->
+    <text x="760" y="100" class="class-attribute">- _id: ObjectId</text>
+    <text x="760" y="115" class="class-attribute">- user: ObjectId</text>
+    <text x="760" y="130" class="class-attribute">- description: string</text>
+    <text x="760" y="145" class="class-attribute">- amount: number</text>
+    <text x="760" y="160" class="class-attribute">- currency: string</text>
+    <text x="760" y="175" class="class-attribute">- creditsUsed: number</text>
+    <text x="760" y="190" class="class-attribute">- status: string</text>
+    <text x="760" y="205" class="class-attribute">- referralCredit: object</text>
+    <text x="760" y="220" class="class-attribute">- createdAt: Date</text>
+    <text x="760" y="235" class="class-attribute">- completedAt: Date</text>
+  </g>
+  
+  <!-- PasswordResetToken Class -->
+  <g id="password-reset-class">
+    <rect x="50" y="350" width="250" height="150" class="class-box"/>
+    <text x="175" y="370" text-anchor="middle" class="class-title">PasswordResetToken</text>
+    <line x1="50" y1="380" x2="300" y2="380" stroke="#333" stroke-width="1"/>
+    
+    <!-- Attributes -->
+    <text x="60" y="400" class="class-attribute">- _id: ObjectId</text>
+    <text x="60" y="415" class="class-attribute">- userId: ObjectId</text>
+    <text x="60" y="430" class="class-attribute">- token: string</text>
+    <text x="60" y="445" class="class-attribute">- used: boolean</text>
+    <text x="60" y="460" class="class-attribute">- expiresAt: Date</text>
+    <text x="60" y="475" class="class-attribute">- createdAt: Date</text>
+    
+    <line x1="50" y1="485" x2="300" y2="485" stroke="#333" stroke-width="1"/>
+    
+    <!-- Methods -->
+    <text x="60" y="500" class="class-method">+ markAsUsed(): void</text>
+  </g>
+  
+  <!-- Frontend Components -->
+  <g id="frontend-components">
+    <rect x="400" y="350" width="200" height="120" class="class-box"/>
+    <text x="500" y="370" text-anchor="middle" class="class-title">AuthStore (Zustand)</text>
+    <line x1="400" y1="380" x2="600" y2="380" stroke="#333" stroke-width="1"/>
+    
+    <text x="410" y="400" class="class-attribute">- user: User | null</text>
+    <text x="410" y="415" class="class-attribute">- token: string | null</text>
+    <text x="410" y="430" class="class-attribute">- isLoading: boolean</text>
+    
+    <line x1="400" y1="440" x2="600" y2="440" stroke="#333" stroke-width="1"/>
+    
+    <text x="410" y="455" class="class-method">+ setUser(user): void</text>
+    <text x="410" y="470" class="class-method">+ refreshUser(): Promise&lt;void&gt;</text>
+  </g>
+  
+  <g id="api-layer">
+    <rect x="650" y="350" width="200" height="120" class="class-box"/>
+    <text x="750" y="370" text-anchor="middle" class="class-title">API Layer</text>
+    <line x1="650" y1="380" x2="850" y2="380" stroke="#333" stroke-width="1"/>
+    
+    <text x="660" y="400" class="class-method">+ authAPI.login()</text>
+    <text x="660" y="415" class="class-method">+ authAPI.register()</text>
+    <text x="660" y="430" class="class-method">+ purchaseAPI.create()</text>
+    <text x="660" y="445" class="class-method">+ referralAPI.getStats()</text>
+    <text x="660" y="460" class="class-method">+ authAPI.getProfile()</text>
+  </g>
+  
+  <!-- Relationships -->
+  
+  <!-- User to Referral (1:many as referrer) -->
+  <line x1="300" y1="120" x2="400" y2="120" class="relationship"/>
+  <polygon points="395,115 405,120 395,125" class="arrow"/>
+  <text x="340" y="115" class="class-attribute" font-size="10">1</text>
+  <text x="370" y="115" class="class-attribute" font-size="10">*</text>
+  <text x="320" y="105" class="class-attribute" font-size="10">referrer</text>
+  
+  <!-- User to Referral (1:1 as referred) -->
+  <line x1="300" y1="140" x2="400" y2="140" class="relationship"/>
+  <polygon points="395,135 405,140 395,145" class="arrow"/>
+  <text x="340" y="135" class="class-attribute" font-size="10">1</text>
+  <text x="370" y="135" class="class-attribute" font-size="10">1</text>
+  <text x="320" y="155" class="class-attribute" font-size="10">referred</text>
+  
+  <!-- User to Purchase (1:many) -->
+  <line x1="300" y1="160" x2="750" y2="160" class="relationship"/>
+  <polygon points="745,155 755,160 745,165" class="arrow"/>
+  <text x="520" y="155" class="class-attribute" font-size="10">1</text>
+  <text x="720" y="155" class="class-attribute" font-size="10">*</text>
+  <text x="500" y="175" class="class-attribute" font-size="10">makes purchases</text>
+  
+  <!-- User to PasswordResetToken (1:many) -->
+  <line x1="175" y1="250" x2="175" y2="350" class="relationship"/>
+  <polygon points="170,345 175,355 180,345" class="arrow"/>
+  <text x="185" y="300" class="class-attribute" font-size="10">1</text>
+  <text x="185" y="340" class="class-attribute" font-size="10">*</text>
+  
+  <!-- Purchase triggers Referral completion -->
+  <path d="M 750 200 Q 700 250 650 200" class="relationship" stroke-dasharray="5,5"/>
+  <text x="680" y="240" class="class-attribute" font-size="10">triggers completion</text>
+  
+  <!-- Frontend to Backend API -->
+  <line x1="600" y1="410" x2="650" y2="410" class="relationship" stroke-dasharray="3,3"/>
+  <polygon points="645,405 655,410 645,415" class="arrow"/>
+  <text x="610" y="405" class="class-attribute" font-size="10">uses</text>
+  
+  <!-- Legend -->
+  <g id="legend">
+    <rect x="50" y="600" width="300" height="150" fill="#f0f0f0" stroke="#333" stroke-width="1"/>
+    <text x="200" y="620" text-anchor="middle" class="class-title">Legend</text>
+    
+    <line x1="60" y1="640" x2="100" y2="640" class="relationship"/>
+    <polygon points="95,635 105,640 95,645" class="arrow"/>
+    <text x="110" y="645" class="class-attribute">Association</text>
+    
+    <line x1="60" y1="660" x2="100" y2="660" class="relationship" stroke-dasharray="5,5"/>
+    <text x="110" y="665" class="class-attribute">Dependency</text>
+    
+    <line x1="60" y1="680" x2="100" y2="680" class="relationship" stroke-dasharray="3,3"/>
+    <text x="110" y="685" class="class-attribute">API Call</text>
+    
+    <text x="60" y="705" class="class-attribute">1, *, 0..1 = Cardinality</text>
+    <text x="60" y="720" class="class-attribute">Backend Models: User, Referral, Purchase</text>
+    <text x="60" y="735" class="class-attribute">Frontend: AuthStore, API Layer</text>
+  </g>
+</svg>

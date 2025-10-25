@@ -77,8 +77,8 @@ export default function DashboardPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join FileSure",
-          text: "Join FileSure using my referral code and we both earn credits!",
+          title: "Join ReferLink",
+          text: "Join ReferLink using my referral code and we both earn credits!",
           url: referralLink,
         });
       } catch (error) {
@@ -124,7 +124,7 @@ export default function DashboardPage() {
                     </svg>
                   </div>
                   <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    FileSure Dashboard
+                    ReferLink Dashboard
                   </h1>
                 </div>
                 <div className="hidden md:flex items-center space-x-6 ml-10">

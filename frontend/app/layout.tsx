@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Referral & Credit System",
-  description: "Earn credits by referring friends to our digital platform",
+  title: "ReferLink - Referral & Credit System",
+  description:
+    "Earn credits by referring friends to ReferLink's digital platform",
 };
 
 export default function RootLayout({

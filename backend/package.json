@@ -1,7 +1,7 @@
 {
-  "name": "referral-credit-backend",
+  "name": "referlink-backend",
   "version": "1.0.0",
-  "description": "Backend for referral and credit system",
+  "description": "Backend for ReferLink referral and credit system",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

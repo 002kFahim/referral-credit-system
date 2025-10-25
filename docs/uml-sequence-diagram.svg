@@ -1,0 +1,238 @@
+<svg width="1400" height="1000" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .actor-box { fill: #e3f2fd; stroke: #1976d2; stroke-width: 2; }
+      .actor-text { fill: #1976d2; font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; text-anchor: middle; }
+      .lifeline { stroke: #666; stroke-width: 2; stroke-dasharray: 5,5; }
+      .activation { fill: #fff3e0; stroke: #f57c00; stroke-width: 2; }
+      .message { stroke: #333; stroke-width: 2; fill: none; }
+      .message-text { fill: #333; font-family: Arial, sans-serif; font-size: 11px; }
+      .return-message { stroke: #666; stroke-width: 1; stroke-dasharray: 3,3; fill: none; }
+      .note { fill: #fff9c4; stroke: #f9a825; stroke-width: 1; }
+      .note-text { fill: #333; font-family: Arial, sans-serif; font-size: 10px; }
+      .title { fill: #333; font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-anchor: middle; }
+      .section-title { fill: #1976d2; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; }
+    </style>
+  </defs>
+  
+  <!-- Title -->
+  <text x="700" y="30" class="title">Referral Credit System - Key Operations Flow</text>
+  
+  <!-- Actors -->
+  <g id="actors">
+    <!-- User -->
+    <rect x="50" y="60" width="80" height="40" class="actor-box"/>
+    <text x="90" y="85" class="actor-text">User</text>
+    
+    <!-- Frontend -->
+    <rect x="200" y="60" width="80" height="40" class="actor-box"/>
+    <text x="240" y="85" class="actor-text">Frontend</text>
+    
+    <!-- AuthStore -->
+    <rect x="350" y="60" width="80" height="40" class="actor-box"/>
+    <text x="390" y="85" class="actor-text">AuthStore</text>
+    
+    <!-- API -->
+    <rect x="500" y="60" width="80" height="40" class="actor-box"/>
+    <text x="540" y="85" class="actor-text">API Layer</text>
+    
+    <!-- Backend -->
+    <rect x="650" y="60" width="80" height="40" class="actor-box"/>
+    <text x="690" y="85" class="actor-text">Backend</text>
+    
+    <!-- Database -->
+    <rect x="800" y="60" width="80" height="40" class="actor-box"/>
+    <text x="840" y="85" class="actor-text">Database</text>
+    
+    <!-- Email Service -->
+    <rect x="950" y="60" width="80" height="40" class="actor-box"/>
+    <text x="990" y="85" class="actor-text">Email Service</text>
+  </g>
+  
+  <!-- Lifelines -->
+  <line x1="90" y1="100" x2="90" y2="950" class="lifeline"/>
+  <line x1="240" y1="100" x2="240" y2="950" class="lifeline"/>
+  <line x1="390" y1="100" x2="390" y2="950" class="lifeline"/>
+  <line x1="540" y1="100" x2="540" y2="950" class="lifeline"/>
+  <line x1="690" y1="100" x2="690" y2="950" class="lifeline"/>
+  <line x1="840" y1="100" x2="840" y2="950" class="lifeline"/>
+  <line x1="990" y1="100" x2="990" y2="950" class="lifeline"/>
+  
+  <!-- Section 1: User Registration with Referral -->
+  <text x="50" y="140" class="section-title">1. User Registration with Referral Code</text>
+  
+  <!-- Messages for Registration -->
+  <g id="registration-flow">
+    <!-- User fills registration form -->
+    <line x1="90" y1="160" x2="240" y2="160" class="message"/>
+    <polygon points="235,155 245,160 235,165" fill="#333"/>
+    <text x="165" y="155" class="message-text">Fill registration form</text>
+    <text x="165" y="170" class="message-text">with referral code</text>
+    
+    <!-- Frontend validates and sends to API -->
+    <rect x="235" y="180" width="10" height="60" class="activation"/>
+    <line x1="240" y1="190" x2="540" y2="190" class="message"/>
+    <polygon points="535,185 545,190 535,195" fill="#333"/>
+    <text x="390" y="185" class="message-text">POST /auth/register</text>
+    <text x="390" y="200" class="message-text">{email, password, referralCode}</text>
+    
+    <!-- API to Backend -->
+    <rect x="535" y="210" width="10" height="120" class="activation"/>
+    <line x1="540" y1="220" x2="690" y2="220" class="message"/>
+    <polygon points="685,215 695,220 685,225" fill="#333"/>
+    <text x="615" y="215" class="message-text">register(userData)</text>
+    
+    <!-- Backend processes registration -->
+    <rect x="685" y="240" width="10" height="200" class="activation"/>
+    
+    <!-- Validate referral code -->
+    <line x1="690" y1="250" x2="840" y2="250" class="message"/>
+    <polygon points="835,245 845,250 835,255" fill="#333"/>
+    <text x="765" y="245" class="message-text">findOne({referralCode})</text>
+    
+    <line x1="840" y1="270" x2="690" y2="270" class="return-message"/>
+    <text x="765" y="265" class="message-text">referrer user</text>
+    
+    <!-- Create new user -->
+    <line x1="690" y1="290" x2="840" y2="290" class="message"/>
+    <polygon points="835,285 845,290 835,295" fill="#333"/>
+    <text x="765" y="285" class="message-text">save(newUser)</text>
+    
+    <!-- Create referral relationship -->
+    <line x1="690" y1="310" x2="840" y2="310" class="message"/>
+    <polygon points="835,305 845,310 835,315" fill="#333"/>
+    <text x="765" y="305" class="message-text">save(referralRecord)</text>
+    
+    <!-- Send emails -->
+    <line x1="690" y1="330" x2="990" y2="330" class="message"/>
+    <polygon points="985,325 995,330 985,335" fill="#333"/>
+    <text x="840" y="325" class="message-text">sendReferralEmails()</text>
+    
+    <!-- Return success -->
+    <line x1="690" y1="360" x2="540" y2="360" class="return-message"/>
+    <text x="615" y="355" class="message-text">{user, token}</text>
+    
+    <line x1="540" y1="380" x2="240" y2="380" class="return-message"/>
+    <text x="390" y="375" class="message-text">Registration success</text>
+    
+    <!-- Update AuthStore -->
+    <line x1="240" y1="400" x2="390" y2="400" class="message"/>
+    <polygon points="385,395 395,400 385,405" fill="#333"/>
+    <text x="315" y="395" class="message-text">setUser(user)</text>
+    
+    <line x1="240" y1="420" x2="90" y2="420" class="return-message"/>
+    <text x="165" y="415" class="message-text">Redirect to dashboard</text>
+  </g>
+  
+  <!-- Section 2: Purchase Creation with Credit Award -->
+  <text x="50" y="480" class="section-title">2. Purchase Creation (Triggers Referral Credit Award)</text>
+  
+  <g id="purchase-flow">
+    <!-- User creates purchase -->
+    <line x1="90" y1="500" x2="240" y2="500" class="message"/>
+    <polygon points="235,495 245,500 235,505" fill="#333"/>
+    <text x="165" y="495" class="message-text">Create purchase</text>
+    
+    <!-- Frontend to API -->
+    <rect x="235" y="520" width="10" height="60" class="activation"/>
+    <line x1="240" y1="530" x2="540" y2="530" class="message"/>
+    <polygon points="535,525 545,530 535,535" fill="#333"/>
+    <text x="390" y="525" class="message-text">POST /purchases</text>
+    
+    <!-- API to Backend -->
+    <rect x="535" y="550" width="10" height="80" class="activation"/>
+    <line x1="540" y1="560" x2="690" y2="560" class="message"/>
+    <polygon points="685,555 695,560 685,565" fill="#333"/>
+    <text x="615" y="555" class="message-text">createPurchase()</text>
+    
+    <!-- Backend transaction -->
+    <rect x="685" y="580" width="10" height="280" class="activation"/>
+    
+    <!-- Start transaction -->
+    <rect x="780" y="590" width="120" height="30" class="note"/>
+    <text x="840" y="610" class="note-text">Database Transaction</text>
+    
+    <!-- Deduct credits if used -->
+    <line x1="690" y1="630" x2="840" y2="630" class="message"/>
+    <polygon points="835,625 845,630 835,635" fill="#333"/>
+    <text x="765" y="625" class="message-text">updateUser(-creditsUsed)</text>
+    
+    <!-- Save purchase -->
+    <line x1="690" y1="650" x2="840" y2="650" class="message"/>
+    <polygon points="835,645 845,650 835,655" fill="#333"/>
+    <text x="765" y="645" class="message-text">save(purchase)</text>
+    
+    <!-- Check for pending referral -->
+    <line x1="690" y1="670" x2="840" y2="670" class="message"/>
+    <polygon points="835,665 845,670 835,675" fill="#333"/>
+    <text x="765" y="665" class="message-text">findPendingReferral()</text>
+    
+    <line x1="840" y1="690" x2="690" y2="690" class="return-message"/>
+    <text x="765" y="685" class="message-text">referral record</text>
+    
+    <!-- Award credits to referrer -->
+    <line x1="690" y1="710" x2="840" y2="710" class="message"/>
+    <polygon points="835,705 845,710 835,715" fill="#333"/>
+    <text x="765" y="705" class="message-text">updateReferrer(+2 credits)</text>
+    
+    <!-- Award credits to purchaser -->
+    <line x1="690" y1="730" x2="840" y2="730" class="message"/>
+    <polygon points="835,725 845,730 835,735" fill="#333"/>
+    <text x="765" y="725" class="message-text">updatePurchaser(+2 credits)</text>
+    
+    <!-- Mark referral as completed -->
+    <line x1="690" y1="750" x2="840" y2="750" class="message"/>
+    <polygon points="835,745 845,750 835,755" fill="#333"/>
+    <text x="765" y="745" class="message-text">markReferralCompleted()</text>
+    
+    <!-- Send notification email -->
+    <line x1="690" y1="770" x2="990" y2="770" class="message"/>
+    <polygon points="985,765 995,770 985,775" fill="#333"/>
+    <text x="840" y="765" class="message-text">sendCreditsEarnedEmail()</text>
+    
+    <!-- Return purchase data -->
+    <line x1="690" y1="800" x2="540" y2="800" class="return-message"/>
+    <text x="615" y="795" class="message-text">purchase data</text>
+    
+    <line x1="540" y1="820" x2="240" y2="820" class="return-message"/>
+    <text x="390" y="815" class="message-text">Purchase created</text>
+    
+    <!-- Refresh user data -->
+    <line x1="240" y1="840" x2="390" y2="840" class="message"/>
+    <polygon points="385,835 395,840 385,845" fill="#333"/>
+    <text x="315" y="835" class="message-text">refreshUser()</text>
+    
+    <rect x="385" y="860" width="10" height="40" class="activation"/>
+    <line x1="390" y1="870" x2="540" y2="870" class="message"/>
+    <polygon points="535,865 545,870 535,875" fill="#333"/>
+    <text x="465" y="865" class="message-text">GET /auth/profile</text>
+    
+    <line x1="540" y1="890" x2="390" y2="890" class="return-message"/>
+    <text x="465" y="885" class="message-text">updated user data</text>
+    
+    <line x1="240" y1="910" x2="90" y2="910" class="return-message"/>
+    <text x="165" y="905" class="message-text">Show updated credits</text>
+  </g>
+  
+  <!-- Notes -->
+  <rect x="1100" y="200" width="250" height="200" class="note"/>
+  <text x="1225" y="220" class="note-text" text-anchor="middle" font-weight="bold">Key Features:</text>
+  <text x="1110" y="240" class="note-text">• Atomic transactions ensure</text>
+  <text x="1110" y="255" class="note-text">  data consistency</text>
+  <text x="1110" y="275" class="note-text">• Automatic credit awarding</text>
+  <text x="1110" y="290" class="note-text">  on first purchase</text>
+  <text x="1110" y="310" class="note-text">• Real-time UI updates</text>
+  <text x="1110" y="325" class="note-text">  via refreshUser()</text>
+  <text x="1110" y="345" class="note-text">• Email notifications</text>
+  <text x="1110" y="360" class="note-text">  for all parties</text>
+  <text x="1110" y="380" class="note-text">• Referral code validation</text>
+  
+  <rect x="1100" y="450" width="250" height="150" class="note"/>
+  <text x="1225" y="470" class="note-text" text-anchor="middle" font-weight="bold">Credit System:</text>
+  <text x="1110" y="490" class="note-text">• 2 credits to referrer</text>
+  <text x="1110" y="505" class="note-text">• 2 credits to new user</text>
+  <text x="1110" y="520" class="note-text">• Credits can be used</text>
+  <text x="1110" y="535" class="note-text">  for purchases</text>
+  <text x="1110" y="555" class="note-text">• Real-time balance</text>
+  <text x="1110" y="570" class="note-text">  updates in UI</text>
+</svg>
