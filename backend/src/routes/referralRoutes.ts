@@ -24,7 +24,11 @@ router.get(
     param("code")
       .trim()
       .isLength({ min: 6, max: 10 })
-      .withMessage("Invalid referral code format"),
+      .withMessage("Invalid referral code format")
+      .matches(/^[A-Za-z0-9]{6,10}$/)
+      .withMessage(
+        "Referral code must be 6-10 characters (letters and numbers only)"
+      ),
     handleValidationErrors,
   ],
   optionalAuth,

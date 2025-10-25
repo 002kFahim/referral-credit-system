@@ -23,13 +23,23 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
-        const [statsResponse, referralsResponse] = await Promise.all([
-          referralAPI.getStats(),
-          referralAPI.getHistory(),
-        ]);
+        const statsResponse = await referralAPI.getStats();
 
-        setStats(statsResponse.data);
-        setRecentReferrals(referralsResponse.data.slice(0, 5));
+        setStats(statsResponse.data.stats);
+        // Transform recentReferrals to match expected format
+        const transformedReferrals = statsResponse.data.recentReferrals.map(
+          (ref: any) => ({
+            _id: ref.id,
+            firstName: ref.referredUser.firstName,
+            lastName: ref.referredUser.lastName,
+            email: ref.referredUser.email,
+            creditsEarned: ref.status === "completed" ? 2 : 0, // 2 credits per completed referral
+            status: ref.status,
+            createdAt: ref.createdAt,
+            completedAt: ref.completedAt,
+          })
+        );
+        setRecentReferrals(transformedReferrals.slice(0, 5));
       } catch (error: any) {
         toast.error(
           error.response?.data?.message || "Failed to load dashboard data"
@@ -117,13 +127,57 @@ export default function DashboardPage() {
                     FileSure Dashboard
                   </h1>
                 </div>
+                <div className="hidden md:flex items-center space-x-6 ml-10">
+                  <button
+                    onClick={() => router.push("/dashboard")}
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  >
+                    Dashboard
+                  </button>
+                  <button
+                    onClick={() => router.push("/purchases")}
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  >
+                    Purchases
+                  </button>
+                  <button
+                    onClick={() => router.push("/referrals")}
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  >
+                    Referrals
+                  </button>
+                  <button
+                    onClick={() => router.push("/analytics")}
+                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium"
+                  >
+                    Analytics
+                  </button>
+                </div>
               </div>
               <div className="flex items-center space-x-4">
-                <div className="hidden sm:block">
+                <div className="hidden sm:flex items-center space-x-4">
                   <span className="text-gray-700 dark:text-gray-300">
                     Welcome back,{" "}
                     <span className="font-medium">{user?.firstName}</span>!
                   </span>
+                  <div className="flex items-center space-x-2 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+                    <svg
+                      className="w-4 h-4 text-blue-600 dark:text-blue-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                      />
+                    </svg>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                      {user?.credits || 0} credits
+                    </span>
+                  </div>
                 </div>
                 <Button onClick={handleLogout} variant="secondary" size="sm">
                   Logout
@@ -193,7 +247,7 @@ export default function DashboardPage() {
                     Credits Earned
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stats?.creditsEarned || 0}
+                    {stats?.totalCreditsEarned || 0}
                   </p>
                 </Card>
               </motion.div>
@@ -342,6 +396,26 @@ export default function DashboardPage() {
                       Quick Actions
                     </h3>
                     <div className="space-y-3">
+                      <Button
+                        onClick={() => router.push("/purchases")}
+                        variant="primary"
+                        className="w-full"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                        Make Purchase
+                      </Button>
                       <Button
                         onClick={() => router.push("/referrals")}
                         variant="outline"

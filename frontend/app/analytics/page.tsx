@@ -10,34 +10,6 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 
-// Progress Bar Component
-const ProgressBar = ({
-  value,
-  max,
-  className = "",
-}: {
-  value: number;
-  max: number;
-  className?: string;
-}) => {
-  const percentage = Math.min((value / max) * 100, 100);
-  return (
-    <div
-      className={`w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2 ${className}`}
-    >
-      <div
-        className="bg-linear-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-        data-width={percentage}
-        ref={(el) => {
-          if (el) {
-            el.style.width = `${percentage}%`;
-          }
-        }}
-      />
-    </div>
-  );
-};
-
 interface AnalyticsData {
   referralStats: {
     totalReferrals: number;
@@ -45,26 +17,19 @@ interface AnalyticsData {
     completedReferrals: number;
     totalCreditsEarned: number;
     conversionRate: number;
-    monthlyGrowth: number;
   };
   purchaseStats: {
     totalPurchases: number;
     totalSpent: number;
     totalCreditsUsed: number;
     averagePurchase: number;
-    monthlySpending: number;
   };
-  monthlyData: Array<{
-    month: string;
-    referrals: number;
-    purchases: number;
-    credits: number;
-  }>;
 }
 
 export default function AnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">(
     "30d"
   );
@@ -73,35 +38,25 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const loadAnalytics = async () => {
       try {
-        // Simulate analytics data - in real app, this would come from API
-        const [referrals, purchases] = await Promise.all([
-          referralAPI.getHistory(),
+        setHasError(false);
+        // Fetch real data from API endpoints
+        const [referralStatsResponse, purchases] = await Promise.all([
+          referralAPI.getStats(),
           purchaseAPI.getHistory(),
         ]);
 
-        const referralData = referrals.data || [];
         const purchaseData = purchases.data || [];
 
         const referralStats = {
-          totalReferrals: referralData.length,
-          pendingReferrals: referralData.filter(
-            (r: any) => r.status === "pending"
-          ).length,
-          completedReferrals: referralData.filter(
-            (r: any) => r.status === "completed"
-          ).length,
-          totalCreditsEarned: referralData.reduce(
-            (sum: number, r: any) => sum + r.creditsEarned,
-            0
+          totalReferrals: referralStatsResponse.data.stats.totalReferrals,
+          pendingReferrals: referralStatsResponse.data.stats.pendingReferrals,
+          completedReferrals:
+            referralStatsResponse.data.stats.successfulReferrals,
+          totalCreditsEarned:
+            referralStatsResponse.data.stats.totalCreditsEarned,
+          conversionRate: parseFloat(
+            referralStatsResponse.data.stats.conversionRate
           ),
-          conversionRate:
-            referralData.length > 0
-              ? (referralData.filter((r: any) => r.status === "completed")
-                  .length /
-                  referralData.length) *
-                100
-              : 0,
-          monthlyGrowth: 15.2, // Simulated
         };
 
         const purchaseStats = {
@@ -111,7 +66,7 @@ export default function AnalyticsPage() {
             0
           ),
           totalCreditsUsed: purchaseData.reduce(
-            (sum: number, p: any) => sum + p.creditsUsed,
+            (sum: number, p: any) => sum + (p.creditsUsed || 0),
             0
           ),
           averagePurchase:
@@ -121,31 +76,15 @@ export default function AnalyticsPage() {
                   0
                 ) / purchaseData.length
               : 0,
-          monthlySpending: 245.5, // Simulated
         };
-
-        // Generate monthly data for the last 6 months
-        const monthlyData = [];
-        for (let i = 5; i >= 0; i--) {
-          const date = new Date();
-          date.setMonth(date.getMonth() - i);
-          monthlyData.push({
-            month: date.toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            }),
-            referrals: Math.floor(Math.random() * 10) + 1,
-            purchases: Math.floor(Math.random() * 5) + 1,
-            credits: Math.floor(Math.random() * 50) + 10,
-          });
-        }
 
         setAnalytics({
           referralStats,
           purchaseStats,
-          monthlyData,
         });
       } catch (error: any) {
+        console.error("Analytics loading error:", error);
+        setHasError(true);
         toast.error(
           error.response?.data?.message || "Failed to load analytics"
         );
@@ -161,24 +100,91 @@ export default function AnalyticsPage() {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <LoadingSpinner size="lg" text="Loading analytics..." />
+          <LoadingSpinner size="lg" />
         </div>
       </ProtectedRoute>
     );
   }
 
-  if (!analytics) {
+  // Handle API errors
+  if (hasError) {
     return (
       <ProtectedRoute>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              No Analytics Data
+          <Card className="text-center p-8">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Unable to Load Analytics
             </h2>
-            <p className="text-gray-600 dark:text-gray-400">
-              Unable to load analytics data at this time.
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              We're having trouble loading your analytics data. Please check
+              your connection and try again.
             </p>
-          </div>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </Card>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
+  // Handle empty data (user has no activity yet)
+  if (
+    !analytics ||
+    (analytics.referralStats.totalReferrals === 0 &&
+      analytics.purchaseStats.totalPurchases === 0)
+  ) {
+    return (
+      <ProtectedRoute>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <Card className="text-center p-8 max-w-md">
+            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-8 h-8 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              Start Your Journey
+            </h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              You haven't made any referrals or purchases yet. Start referring
+              friends or make your first purchase to see your analytics here!
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button onClick={() => router.push("/referrals")}>
+                Start Referring
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => router.push("/dashboard")}
+              >
+                Go to Dashboard
+              </Button>
+            </div>
+          </Card>
         </div>
       </ProtectedRoute>
     );
@@ -187,52 +193,31 @@ export default function AnalyticsPage() {
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Navigation */}
-        <nav className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
+            <div className="flex justify-between items-center py-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Analytics Dashboard
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-1">
+                  Track your referral and purchase performance
+                </p>
+              </div>
               <div className="flex items-center space-x-4">
                 <Button
+                  variant="outline"
                   onClick={() => router.push("/dashboard")}
-                  variant="ghost"
-                  size="sm"
                 >
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 19l-7-7 7-7"
-                    />
-                  </svg>
                   Back to Dashboard
                 </Button>
-                <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Analytics
-                </h1>
-              </div>
-              <div className="flex items-center space-x-2">
-                <select
-                  value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value as any)}
-                  aria-label="Select time range for analytics"
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                >
-                  <option value="7d">Last 7 days</option>
-                  <option value="30d">Last 30 days</option>
-                  <option value="90d">Last 90 days</option>
-                  <option value="1y">Last year</option>
-                </select>
               </div>
             </div>
           </div>
-        </nav>
+        </header>
 
+        {/* Main Content */}
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
             {/* Referral Analytics */}
@@ -263,13 +248,14 @@ export default function AnalyticsPage() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Conversion Rate
+                    Referred Users
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics.referralStats.conversionRate.toFixed(1)}%
+                    {analytics.referralStats.totalReferrals}
                   </p>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    +2.3% from last month
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {analytics.referralStats.pendingReferrals} pending,{" "}
+                    {analytics.referralStats.completedReferrals} completed
                   </p>
                 </Card>
 
@@ -290,13 +276,13 @@ export default function AnalyticsPage() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Monthly Growth
+                    Converted Users
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics.referralStats.monthlyGrowth.toFixed(1)}%
+                    {analytics.referralStats.completedReferrals}
                   </p>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    Trending upward
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Who purchased
                   </p>
                 </Card>
 
@@ -317,7 +303,7 @@ export default function AnalyticsPage() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Credits Earned
+                    Total Credits Earned
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
                     {analytics.referralStats.totalCreditsEarned}
@@ -352,18 +338,18 @@ export default function AnalyticsPage() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                       />
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Average Purchase
+                    Total Purchases
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ${analytics.purchaseStats.averagePurchase.toFixed(2)}
+                    {analytics.purchaseStats.totalPurchases}
                   </p>
-                  <p className="text-sm text-green-600 dark:text-green-400 mt-1">
-                    +$12.50 from last month
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    All time
                   </p>
                 </Card>
 
@@ -379,18 +365,18 @@ export default function AnalyticsPage() {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
                       />
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Monthly Spending
+                    Total Spent
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    ${analytics.purchaseStats.monthlySpending.toFixed(2)}
+                    ${analytics.purchaseStats.totalSpent.toFixed(2)}
                   </p>
-                  <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-                    +15% from last month
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    All time
                   </p>
                 </Card>
 
@@ -411,19 +397,19 @@ export default function AnalyticsPage() {
                     </svg>
                   </div>
                   <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                    Credits Used
+                    Average Purchase
                   </h3>
                   <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {analytics.purchaseStats.totalCreditsUsed}
+                    ${analytics.purchaseStats.averagePurchase.toFixed(2)}
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Total lifetime
+                    Per transaction
                   </p>
                 </Card>
               </div>
             </motion.div>
 
-            {/* Monthly Trends */}
+            {/* Credits Usage */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -432,48 +418,65 @@ export default function AnalyticsPage() {
               <Card>
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Monthly Trends
+                    Credits Overview
                   </h3>
                 </div>
 
-                <div className="space-y-6">
-                  {analytics.monthlyData.map((month, index) => (
-                    <motion.div
-                      key={month.month}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * index }}
-                      className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-linear-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-semibold text-sm">
-                            {month.month.split(" ")[0]}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {month.month}
-                          </h4>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {month.referrals} referrals • {month.purchases}{" "}
-                            purchases
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-green-600 dark:text-green-400">
-                          +{month.credits} credits
-                        </p>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <ProgressBar value={month.referrals} max={10} />
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {month.referrals}/10
-                          </span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="text-center p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-8 h-8 text-green-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Credits Earned
+                    </h4>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">
+                      {analytics.referralStats.totalCreditsEarned}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      From {analytics.referralStats.completedReferrals}{" "}
+                      successful referrals
+                    </p>
+                  </div>
+
+                  <div className="text-center p-6 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-8 h-8 text-blue-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M20 12H4"
+                        />
+                      </svg>
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Credits Used
+                    </h4>
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                      {analytics.purchaseStats.totalCreditsUsed}
+                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      Across {analytics.purchaseStats.totalPurchases} purchases
+                    </p>
+                  </div>
                 </div>
               </Card>
             </motion.div>

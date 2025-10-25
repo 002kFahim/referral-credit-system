@@ -33,7 +33,7 @@ const userSchema = new Schema<IUser>(
     password: {
       type: String,
       required: [true, "Password is required"],
-      minlength: [6, "Password must be at least 6 characters"],
+      minlength: [8, "Password must be at least 8 characters"],
       select: false,
     },
     firstName: {
@@ -98,12 +98,14 @@ userSchema.pre("save", async function (next) {
   }
 });
 
-// Pre-save middleware to generate referral code
+// Pre-save middleware to generate referral code (only if not already set)
 userSchema.pre("save", function (next) {
   if (!this.referralCode) {
-    const firstName = this.firstName.toUpperCase().substring(0, 3);
-    const randomNum = Math.floor(1000 + Math.random() * 9000);
-    this.referralCode = `${firstName}${randomNum}`;
+    // Generate a 6-character alphanumeric code
+    this.referralCode = Math.random()
+      .toString(36)
+      .substring(2, 8)
+      .toUpperCase();
   }
   next();
 });
@@ -120,9 +122,7 @@ userSchema.methods.comparePassword = async function (
 
 // Instance method to generate referral code
 userSchema.methods.generateReferralCode = function (): string {
-  const firstName = this.firstName.toUpperCase().substring(0, 3);
-  const randomNum = Math.floor(1000 + Math.random() * 9000);
-  return `${firstName}${randomNum}`;
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
 export const User = mongoose.model<IUser>("User", userSchema);

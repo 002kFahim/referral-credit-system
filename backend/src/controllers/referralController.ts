@@ -22,9 +22,8 @@ export const getReferralStats = async (req: Request, res: Response) => {
       status: "pending",
     });
 
-    // Get total credits earned from referrals
-    const user = await User.findById(userId);
-    const totalCredits = user?.credits || 0;
+    // Get total credits earned from referrals (2 credits per successful referral)
+    const totalCreditsEarned = successfulReferrals * 2;
 
     // Get recent referrals with user details
     const recentReferrals = await Referral.find({ referrer: userId })
@@ -39,7 +38,7 @@ export const getReferralStats = async (req: Request, res: Response) => {
           totalReferrals,
           successfulReferrals,
           pendingReferrals,
-          totalCredits,
+          totalCreditsEarned,
           conversionRate:
             totalReferrals > 0
               ? ((successfulReferrals / totalReferrals) * 100).toFixed(2)
@@ -126,7 +125,7 @@ export const getRecentReferrals = async (req: Request, res: Response) => {
         firstName: ref.referred.firstName,
         lastName: ref.referred.lastName,
         email: ref.referred.email,
-        creditsEarned: ref.creditsEarned || 10, // Default credit amount
+        creditsEarned: ref.creditsEarned || 0, // Only show actual earned credits
         status: ref.status,
         createdAt: ref.createdAt,
         completedAt: ref.completedAt,
@@ -166,7 +165,7 @@ export const getReferralHistory = async (req: Request, res: Response) => {
         firstName: ref.referred.firstName,
         lastName: ref.referred.lastName,
         email: ref.referred.email,
-        creditsEarned: ref.creditsEarned || 10, // Default credit amount
+        creditsEarned: ref.creditsEarned || 0, // Only show actual earned credits
         status: ref.status,
         createdAt: ref.createdAt,
         completedAt: ref.completedAt,

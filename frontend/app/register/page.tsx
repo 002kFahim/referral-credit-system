@@ -9,7 +9,7 @@ import { useAuthStore } from "@/store/authStore";
 import { authAPI, referralAPI } from "@/lib/api";
 import FormInput from "@/components/ui/FormInput";
 import Button from "@/components/ui/Button";
-import { validateForm, commonRules, ValidationErrors } from "@/lib/validation";
+import { ValidationErrors } from "@/lib/validation";
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -54,7 +54,7 @@ export default function RegisterPage() {
       minLength: 8,
     },
     referralCode: {
-      pattern: /^[A-Z0-9]{6,10}$/,
+      pattern: /^[A-Za-z0-9]{6,10}$/,
       message: "Referral code must be 6-10 characters (letters and numbers)",
     },
   };
@@ -64,7 +64,7 @@ export default function RegisterPage() {
     lastName: commonRules.name,
     email: commonRules.email,
     password: {
-      ...commonRules.password,
+      required: true,
       minLength: 8,
       custom: (value: string) => {
         if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(value)) {
@@ -73,15 +73,7 @@ export default function RegisterPage() {
         return null;
       },
     },
-    confirmPassword: {
-      required: true,
-      custom: (value: string) => {
-        if (value !== formData.password) {
-          return "Passwords do not match";
-        }
-        return null;
-      },
-    },
+
     referralCode: {
       ...commonRules.referralCode,
       required: false,
@@ -108,6 +100,7 @@ export default function RegisterPage() {
     if (
       "minLength" in rules &&
       rules.minLength &&
+      value.trim() &&
       value.length < rules.minLength
     ) {
       return `${
@@ -115,7 +108,23 @@ export default function RegisterPage() {
       } must be at least ${rules.minLength} characters`;
     }
 
-    if ("pattern" in rules && rules.pattern && !rules.pattern.test(value)) {
+    if (
+      "maxLength" in rules &&
+      rules.maxLength &&
+      typeof rules.maxLength === "number" &&
+      value.length > rules.maxLength
+    ) {
+      return `${
+        name.charAt(0).toUpperCase() + name.slice(1)
+      } must be no more than ${rules.maxLength} characters`;
+    }
+
+    if (
+      "pattern" in rules &&
+      rules.pattern &&
+      value.trim() &&
+      !rules.pattern.test(value)
+    ) {
       return ("message" in rules && rules.message) || `Invalid ${name}`;
     }
 
@@ -169,13 +178,12 @@ export default function RegisterPage() {
       }
     });
 
-    // Validate confirmPassword separately
-    const confirmPasswordError = validateField(
-      "confirmPassword",
-      formData.confirmPassword
-    );
-    if (confirmPasswordError) {
-      newErrors.confirmPassword = confirmPasswordError;
+    // Validate confirmPassword separately with current password value
+    if (!formData.confirmPassword.trim()) {
+      newErrors.confirmPassword = "Confirm password is required";
+      isValid = false;
+    } else if (formData.confirmPassword !== formData.password) {
+      newErrors.confirmPassword = "Passwords do not match";
       isValid = false;
     }
 
@@ -194,7 +202,14 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      const { confirmPassword, ...submitData } = formData;
+      const { confirmPassword, referralCode, ...baseData } = formData;
+
+      // Only include referralCode if it's not empty
+      const submitData = {
+        ...baseData,
+        ...(referralCode && referralCode.trim() ? { referralCode } : {}),
+      };
+
       const response = await authAPI.register(submitData);
       const { user, token } = response.data.data;
 
@@ -278,101 +293,105 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="firstName"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+            <FormInput
+              name="firstName"
+              label="First Name"
+              type="text"
+              value={formData.firstName}
+              onChange={handleChange}
+              error={errors.firstName}
+              placeholder="First name"
+              required
+              icon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              }
+            />
+            <FormInput
+              name="lastName"
+              label="Last Name"
+              type="text"
+              value={formData.lastName}
+              onChange={handleChange}
+              error={errors.lastName}
+              placeholder="Last name"
+              required
+              icon={
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              }
+            />
+          </div>
+
+          <FormInput
+            name="email"
+            label="Email Address"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            placeholder="Enter your email"
+            required
+            icon={
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
-                placeholder="First name"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="lastName"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
-                placeholder="Last name"
-              />
-            </div>
-          </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                />
+              </svg>
+            }
+          />
 
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
-              placeholder="Enter your email"
-            />
-          </div>
+          <FormInput
+            name="password"
+            label="Password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            placeholder="Create a password"
+            required
+          />
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Password
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              minLength={6}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
-              placeholder="Create a password"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-            >
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              id="confirmPassword"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white text-sm"
-              placeholder="Confirm your password"
-            />
-          </div>
+          <FormInput
+            name="confirmPassword"
+            label="Confirm Password"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
+            placeholder="Confirm your password"
+            required
+          />
 
           <div>
             <label

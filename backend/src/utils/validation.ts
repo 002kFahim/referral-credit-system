@@ -7,20 +7,32 @@ export const validateRegister = [
     .normalizeEmail()
     .withMessage("Please provide a valid email"),
   body("password")
-    .isLength({ min: 6 })
-    .withMessage("Password must be at least 6 characters long"),
+    .isLength({ min: 8 })
+    .withMessage("Password must be at least 8 characters long")
+    .matches(/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+    .withMessage(
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+    ),
   body("firstName")
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage("First name must be between 2 and 50 characters"),
+    .withMessage("First name must be between 2 and 50 characters")
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage("First name must contain only letters and spaces"),
   body("lastName")
     .trim()
     .isLength({ min: 2, max: 50 })
-    .withMessage("Last name must be between 2 and 50 characters"),
+    .withMessage("Last name must be between 2 and 50 characters")
+    .matches(/^[a-zA-Z\s]+$/)
+    .withMessage("Last name must contain only letters and spaces"),
   body("referralCode")
     .optional()
     .isLength({ min: 6, max: 10 })
-    .withMessage("Referral code must be between 6 and 10 characters"),
+    .withMessage("Referral code must be between 6 and 10 characters")
+    .matches(/^[A-Z0-9]{6,10}$/)
+    .withMessage(
+      "Referral code must be 6-10 characters (letters and numbers only)"
+    ),
 ];
 
 export const validateLogin = [

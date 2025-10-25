@@ -53,30 +53,37 @@ export const createPurchase = async (req: Request, res: Response) => {
       }).session(session);
 
       if (referral) {
-        // Mark referral as completed
+        // Mark referral as completed and award 2 credits to referrer
         referral.status = "completed";
         referral.completedAt = new Date();
+        referral.creditsEarned = 2; // Fixed amount as per specification
         await referral.save({ session });
 
-        // Award credits to referrer (10% of purchase amount)
-        const creditAmount = Math.floor(amount * 0.1);
+        // Award 2 credits to referrer
         const referrerUser = await User.findByIdAndUpdate(
           referral.referrer,
-          { $inc: { credits: creditAmount } },
+          { $inc: { credits: 2 } },
           { session, new: true }
+        );
+
+        // Award 2 credits to referred user (the purchaser)
+        await User.findByIdAndUpdate(
+          userId,
+          { $inc: { credits: 2 } },
+          { session }
         );
 
         // Store credit information in purchase
         purchase.referralCredit = {
           referrer: referral.referrer,
-          amount: creditAmount,
+          amount: 2,
         };
         await purchase.save({ session });
 
         // Send email notification to referrer (async, don't wait)
         if (referrerUser && req.user) {
           emailService
-            .sendCreditsEarnedEmail(referrerUser, creditAmount, {
+            .sendCreditsEarnedEmail(referrerUser, 2, {
               name: `${req.user.firstName} ${req.user.lastName}`,
               email: req.user.email,
               amount: amount,

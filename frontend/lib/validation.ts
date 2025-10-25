@@ -65,16 +65,21 @@ export const commonRules = {
   },
   password: {
     required: true,
-    minLength: 6,
+    minLength: 8,
+    pattern: /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+    message:
+      "Password must contain at least one uppercase letter, one lowercase letter, and one number",
   },
   name: {
     required: true,
     minLength: 2,
     maxLength: 50,
+    pattern: /^[a-zA-Z\s]+$/,
+    message: "Name must contain only letters and spaces",
   },
   referralCode: {
     minLength: 6,
     maxLength: 10,
-    pattern: /^[A-Z0-9]+$/,
+    pattern: /^[A-Z0-9]{6,10}$/,
   },
 };

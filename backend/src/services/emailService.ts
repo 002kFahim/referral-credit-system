@@ -9,43 +9,114 @@ interface EmailOptions {
 }
 
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
+    // Constructor is now empty - transporter will be initialized lazily
+  }
+
+  private initializeTransporter(): void {
+    if (this.transporter) return; // Already initialized
+
+    // Clean environment variables (remove quotes if present)
+    const smtpHost = (process.env.SMTP_HOST || "").replace(/['"]/g, "");
+    const smtpPort = parseInt(
+      (process.env.SMTP_PORT || "587").replace(/['"]/g, "")
+    );
+    const smtpSecure =
+      (process.env.SMTP_SECURE || "false")
+        .replace(/['"]/g, "")
+        .toLowerCase() === "true";
+    const smtpUser = (process.env.SMTP_USER || "").replace(/['"]/g, "");
+    const smtpPassword = (process.env.SMTP_PASSWORD || "").replace(/['"]/g, "");
+
+    console.log("📧 Email Service Configuration:");
+    console.log(`   Host: ${smtpHost}`);
+    console.log(`   Port: ${smtpPort}`);
+    console.log(`   Secure: ${smtpSecure}`);
+    console.log(
+      `   User: ${smtpUser ? smtpUser.substring(0, 3) + "***" : "Not set"}`
+    );
+    console.log(`   Password: ${smtpPassword ? "***" : "Not set"}`);
+
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || "587"),
-      secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure, // true for 465, false for other ports
       auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASSWORD,
+        user: smtpUser,
+        pass: smtpPassword,
       },
       tls: {
         rejectUnauthorized: false,
       },
+      debug: process.env.NODE_ENV === "development",
+      logger: process.env.NODE_ENV === "development",
     });
+  }
+
+  async testConnection(): Promise<boolean> {
+    try {
+      this.initializeTransporter();
+      console.log("📧 Testing SMTP connection...");
+      await this.transporter!.verify();
+      console.log("✅ SMTP connection successful");
+      return true;
+    } catch (error) {
+      console.error("❌ SMTP connection failed:", error);
+      return false;
+    }
   }
 
   private async sendEmail(options: EmailOptions): Promise<boolean> {
     try {
-      if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      this.initializeTransporter();
+
+      const smtpUser = (process.env.SMTP_USER || "").replace(/['"]/g, "");
+      const smtpPassword = (process.env.SMTP_PASSWORD || "").replace(
+        /['"]/g,
+        ""
+      );
+
+      if (!smtpUser || !smtpPassword) {
         console.log("📧 Email service not configured, skipping email send");
         return false;
       }
 
+      const smtpFrom = (process.env.SMTP_FROM || smtpUser).replace(/['"]/g, "");
+
       const mailOptions = {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: smtpFrom,
         to: options.to,
         subject: options.subject,
         html: options.html,
         text: options.text,
       };
 
-      await this.transporter.sendMail(mailOptions);
-      console.log(`📧 Email sent successfully to ${options.to}`);
+      console.log(`📧 Attempting to send email to ${options.to}...`);
+      await this.transporter!.sendMail(mailOptions);
+      console.log(`✅ Email sent successfully to ${options.to}`);
       return true;
-    } catch (error) {
-      console.error("📧 Email send failed:", error);
+    } catch (error: any) {
+      console.error("❌ Email send failed:", {
+        error: error.message,
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        responseCode: error.responseCode,
+      });
+
+      // Provide specific error messages for common issues
+      if (error.code === "ECONNREFUSED") {
+        console.error("💡 Suggestion: Check if SMTP host and port are correct");
+      } else if (error.code === "EAUTH") {
+        console.error("💡 Suggestion: Check SMTP username and password");
+      } else if (error.responseCode === 535) {
+        console.error(
+          "💡 Suggestion: Enable 'Less secure app access' or use App Password for Gmail"
+        );
+      }
+
       return false;
     }
   }
@@ -276,6 +347,158 @@ class EmailService {
       subject,
       html,
       text: `Welcome! You were referred by ${referrerName} (${referrer.email}). Your referral code is: ${referredUser.referralCode}`,
+    });
+  }
+
+  async sendPasswordResetEmail(
+    user: IUser,
+    resetToken: string,
+    resetUrl: string
+  ): Promise<boolean> {
+    const subject = "Reset Your Password - ReferralCredit";
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #2563eb; margin: 0; font-size: 28px;">🔐 Password Reset</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">Hello ${user.firstName}!</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            We received a request to reset your password for your ReferralCredit account. 
+            If you didn't make this request, you can safely ignore this email.
+          </p>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
+            To reset your password, click the button below. This link will expire in 1 hour for security reasons.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetUrl}" 
+               style="background-color: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+              Reset My Password
+            </a>
+          </div>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            If the button doesn't work, you can copy and paste this link into your browser:
+          </p>
+          
+          <p style="color: #2563eb; word-break: break-all; background-color: #f3f4f6; padding: 10px; border-radius: 5px; margin-bottom: 30px;">
+            ${resetUrl}
+          </p>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+            <p style="color: #9ca3af; font-size: 14px; margin-bottom: 10px;">
+              <strong>Security Tips:</strong>
+            </p>
+            <ul style="color: #9ca3af; font-size: 14px; margin: 0; padding-left: 20px;">
+              <li>This link expires in 1 hour</li>
+              <li>Only use this link if you requested a password reset</li>
+              <li>Never share this link with anyone</li>
+            </ul>
+          </div>
+          
+          <p style="color: #666; margin-top: 30px;">Best regards,<br>The ReferralCredit Team</p>
+        </div>
+      </div>
+    `;
+
+    const textContent = `
+Password Reset Request
+
+Hello ${user.firstName}!
+
+We received a request to reset your password for your ReferralCredit account.
+
+To reset your password, visit this link: ${resetUrl}
+
+This link will expire in 1 hour for security reasons.
+
+If you didn't request this password reset, you can safely ignore this email.
+
+Best regards,
+The ReferralCredit Team
+    `;
+
+    return this.sendEmail({
+      to: user.email,
+      subject,
+      html,
+      text: textContent,
+    });
+  }
+
+  async sendPasswordResetConfirmationEmail(user: IUser): Promise<boolean> {
+    const subject = "Password Successfully Reset - ReferralCredit";
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #059669; margin: 0; font-size: 28px;">✅ Password Reset Successful</h1>
+          </div>
+          
+          <h2 style="color: #333; margin-bottom: 20px;">Hello ${
+            user.firstName
+          }!</h2>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 20px;">
+            Your password has been successfully reset for your ReferralCredit account.
+          </p>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 30px;">
+            You can now log in to your account using your new password.
+          </p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${
+              process.env.FRONTEND_URL || "http://localhost:3000"
+            }/login" 
+               style="background-color: #059669; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+              Login to Your Account
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+            <p style="color: #dc2626; font-size: 14px; margin-bottom: 10px;">
+              <strong>⚠️ Security Notice:</strong>
+            </p>
+            <p style="color: #9ca3af; font-size: 14px; margin: 0;">
+              If you didn't reset your password, please contact our support team immediately 
+              as your account may have been compromised.
+            </p>
+          </div>
+          
+          <p style="color: #666; margin-top: 30px;">Best regards,<br>The ReferralCredit Team</p>
+        </div>
+      </div>
+    `;
+
+    const textContent = `
+Password Reset Successful
+
+Hello ${user.firstName}!
+
+Your password has been successfully reset for your ReferralCredit account.
+
+You can now log in to your account using your new password.
+
+Login at: ${process.env.FRONTEND_URL || "http://localhost:3000"}/login
+
+Security Notice: If you didn't reset your password, please contact our support team immediately.
+
+Best regards,
+The ReferralCredit Team
+    `;
+
+    return this.sendEmail({
+      to: user.email,
+      subject,
+      html,
+      text: textContent,
     });
   }
 }

@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { User } from "../models/User";
 import { Referral } from "../models/Referral";
+import { PasswordResetToken } from "../models/PasswordResetToken";
 import { generateToken } from "../utils/jwt";
 import { emailService } from "../services/emailService";
 
@@ -44,18 +46,15 @@ export const register = async (req: Request, res: Response) => {
       }
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12);
-
     // Generate unique referral code for new user
     const newReferralCode = await generateReferralCode();
 
-    // Create new user
+    // Create new user (password will be hashed by pre-save middleware)
     const user = new User({
       firstName,
       lastName,
       email,
-      password: hashedPassword,
+      password, // Raw password - will be hashed by pre-save middleware
       referralCode: newReferralCode,
       referredBy: referrer?._id || null,
       credits: 0,
@@ -188,6 +187,180 @@ export const getProfile = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Get profile error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      // Don't reveal if email exists or not for security
+      return res.status(200).json({
+        success: true,
+        message:
+          "If an account with that email exists, we've sent password reset instructions.",
+      });
+    }
+
+    // Clean up any existing tokens for this user
+    const existingTokens = await PasswordResetToken.deleteMany({
+      userId: user._id,
+    });
+    console.log(
+      `🗑️  Cleaned up ${existingTokens.deletedCount} existing tokens for user: ${user.email}`
+    );
+
+    // Generate secure random token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+
+    // Create expiration time (1 hour from now)
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    // Save reset token to database
+    const newTokenDoc = await PasswordResetToken.create({
+      userId: user._id,
+      token: resetToken,
+      expiresAt,
+    });
+    console.log(
+      `🔑 Created new reset token: ${newTokenDoc._id} for user: ${user.email}`
+    );
+
+    // Create reset URL
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+
+    // Send password reset email
+    const emailSent = await emailService.sendPasswordResetEmail(
+      user,
+      resetToken,
+      resetUrl
+    );
+
+    if (!emailSent) {
+      console.error("Failed to send password reset email to:", email);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email. Please try again.",
+      });
+    }
+
+    console.log(`Password reset email sent to: ${email}`);
+
+    return res.status(200).json({
+      success: true,
+      message:
+        "If an account with that email exists, we've sent password reset instructions.",
+    });
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    console.log(
+      `🔐 Password reset attempt for token: ${token.substring(0, 10)}...`
+    );
+
+    // Find valid reset token
+    const resetTokenDoc = await PasswordResetToken.findOne({
+      token,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!resetTokenDoc) {
+      console.log(
+        `❌ Token not found or invalid: ${token.substring(0, 10)}...`
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token",
+      });
+    }
+
+    console.log(
+      `✅ Valid token found - ID: ${resetTokenDoc._id}, Used: ${resetTokenDoc.used}, Expires: ${resetTokenDoc.expiresAt}`
+    );
+
+    // Find the user
+    const user = await User.findById(resetTokenDoc.userId);
+    if (!user) {
+      console.log(`❌ User not found for token: ${resetTokenDoc._id}`);
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    console.log(`👤 User found: ${user.email}`);
+
+    // Double-check the token is still valid (race condition protection)
+    const doubleCheckToken = await PasswordResetToken.findOne({
+      _id: resetTokenDoc._id,
+      used: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!doubleCheckToken) {
+      console.log(
+        `❌ Token was used or expired during processing: ${resetTokenDoc._id}`
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Token has already been used or expired",
+      });
+    }
+
+    // Update user password (will be hashed by pre-save middleware)
+    user.password = newPassword;
+    await user.save();
+    console.log(`🔑 Password updated for user: ${user.email}`);
+
+    // Mark token as used first (for logging/audit purposes)
+    console.log(`🏷️  Marking token as used: ${resetTokenDoc._id}`);
+    await resetTokenDoc.markAsUsed();
+
+    // Verify the token was marked as used
+    const verifyToken = await PasswordResetToken.findById(resetTokenDoc._id);
+    console.log(
+      `✅ Token verification after markAsUsed - Used: ${verifyToken?.used}, ID: ${verifyToken?._id}`
+    );
+
+    // Immediately delete ALL tokens for this user (including the one just used)
+    // This ensures no token can be reused, even if there's a race condition
+    const deletedTokens = await PasswordResetToken.deleteMany({
+      userId: user._id,
+    });
+    console.log(
+      `🗑️  Deleted ${deletedTokens.deletedCount} tokens for user: ${user.email} (including the used one)`
+    );
+
+    // Send confirmation email
+    await emailService.sendPasswordResetConfirmationEmail(user);
+
+    console.log(`Password reset successful for user: ${user.email}`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+  } catch (error) {
+    console.error("Reset password error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

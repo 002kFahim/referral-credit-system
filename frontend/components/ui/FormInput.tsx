@@ -63,6 +63,7 @@ export default function FormInput({
           className={`
             w-full px-4 py-3 border rounded-lg transition-all duration-200
             ${icon ? "pl-10" : ""}
+            ${type === "password" ? "pr-10" : ""}
             ${
               error
                 ? "border-red-300 focus:border-red-500 focus:ring-red-500"
@@ -73,6 +74,10 @@ export default function FormInput({
             disabled:opacity-50 disabled:cursor-not-allowed
             focus:outline-none
           `}
+          style={{
+            WebkitAppearance: type === "password" ? "none" : undefined,
+            MozAppearance: type === "password" ? "textfield" : undefined,
+          }}
           animate={{
             scale: isFocused ? 1.02 : 1,
           }}

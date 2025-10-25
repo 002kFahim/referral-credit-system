@@ -92,7 +92,7 @@ export default function TestPage() {
       // Test 5: Create Purchase
       await runTest("Create Purchase", async () => {
         await purchaseAPI.create({
-          productName: "Test Purchase",
+          description: "Test Purchase",
           amount: 99.99,
           currency: "USD",
         });

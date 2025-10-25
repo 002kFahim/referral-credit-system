@@ -21,10 +21,19 @@ interface Purchase {
   completedAt?: string;
 }
 
+interface PredefinedItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+}
+
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { user } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -93,26 +102,47 @@ export default function PurchasesPage() {
                   Purchase History
                 </h1>
               </div>
-              <Button
-                onClick={() => setShowCreateModal(true)}
-                variant="primary"
-                size="sm"
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div className="flex items-center space-x-4">
+                {/* Credits Display */}
+                <div className="flex items-center space-x-2 px-3 py-1 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <svg
+                    className="w-4 h-4 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                    {user?.credits || 0} Credits
+                  </span>
+                </div>
+                <Button
+                  onClick={() => setShowCreateModal(true)}
+                  variant="primary"
+                  size="sm"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                New Purchase
-              </Button>
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Create Purchase
+                </Button>
+              </div>
             </div>
           </div>
         </nav>
@@ -417,25 +447,89 @@ function CreatePurchaseModal({
   onClose: () => void;
   onSuccess: (purchase: Purchase) => void;
 }) {
+  const predefinedItems: PredefinedItem[] = [
+    {
+      id: "1",
+      name: "JavaScript Mastery Course",
+      description: "Complete JavaScript course from beginner to advanced",
+      price: 49.99,
+      category: "Course",
+    },
+    {
+      id: "2",
+      name: "React Development Guide",
+      description: "Comprehensive guide to React development",
+      price: 29.99,
+      category: "Book",
+    },
+    {
+      id: "3",
+      name: "Node.js Backend Bootcamp",
+      description: "Learn backend development with Node.js",
+      price: 79.99,
+      category: "Course",
+    },
+    {
+      id: "4",
+      name: "TypeScript Handbook",
+      description: "Master TypeScript for better JavaScript development",
+      price: 24.99,
+      category: "Book",
+    },
+    {
+      id: "5",
+      name: "Full Stack Web Development",
+      description: "Complete full stack development course",
+      price: 99.99,
+      category: "Course",
+    },
+    {
+      id: "6",
+      name: "Database Design Patterns",
+      description: "Learn effective database design and optimization",
+      price: 34.99,
+      category: "Book",
+    },
+  ];
+
+  const [purchaseType, setPurchaseType] = useState<"predefined" | "custom">(
+    "predefined"
+  );
+  const [selectedItem, setSelectedItem] = useState<PredefinedItem | null>(null);
   const [formData, setFormData] = useState({
     amount: "",
     description: "",
     creditsToUse: "0",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const { refreshUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      let description, amount;
+
+      if (purchaseType === "predefined" && selectedItem) {
+        description = selectedItem.name;
+        amount = selectedItem.price;
+      } else {
+        description = formData.description;
+        amount = parseFloat(formData.amount);
+      }
+
       const response = await purchaseAPI.create({
-        productName: formData.description,
-        amount: parseFloat(formData.amount),
+        description,
+        amount,
         currency: "USD",
       });
 
       toast.success("Purchase created successfully!");
+
+      // Refresh user data to update credits
+      await refreshUser();
+
       onSuccess(response.data);
     } catch (error: any) {
       toast.error(error.response?.data?.message || "Failed to create purchase");
@@ -449,7 +543,7 @@ function CreatePurchaseModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
@@ -477,40 +571,110 @@ function CreatePurchaseModal({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Description
-              </label>
-              <input
-                type="text"
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="What are you purchasing?"
-                required
-              />
+          {/* Purchase Type Toggle */}
+          <div className="mb-6">
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <button
+                type="button"
+                onClick={() => setPurchaseType("predefined")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  purchaseType === "predefined"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Browse Items
+              </button>
+              <button
+                type="button"
+                onClick={() => setPurchaseType("custom")}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  purchaseType === "custom"
+                    ? "bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                Custom Purchase
+              </button>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Amount ($)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.amount}
-                onChange={(e) =>
-                  setFormData({ ...formData, amount: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="0.00"
-                required
-              />
-            </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {purchaseType === "predefined" ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Select an Item
+                </label>
+                <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
+                  {predefinedItems.map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => setSelectedItem(item)}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                        selectedItem?.id === item.id
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 dark:text-white">
+                            {item.name}
+                          </h4>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            {item.description}
+                          </p>
+                          <span className="inline-block mt-2 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-xs font-medium text-gray-600 dark:text-gray-400 rounded">
+                            {item.category}
+                          </span>
+                        </div>
+                        <div className="text-right ml-4">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            ${item.price}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Description
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.description}
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="What are you purchasing?"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Amount ($)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={(e) =>
+                      setFormData({ ...formData, amount: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
+              </>
+            )}
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -540,11 +704,15 @@ function CreatePurchaseModal({
               <Button
                 type="submit"
                 loading={isLoading}
-                disabled={isLoading}
+                disabled={
+                  isLoading || (purchaseType === "predefined" && !selectedItem)
+                }
                 variant="primary"
                 className="flex-1"
               >
-                Create Purchase
+                {purchaseType === "predefined" && selectedItem
+                  ? `Purchase ${selectedItem.name} - $${selectedItem.price}`
+                  : "Create Purchase"}
               </Button>
             </div>
           </form>

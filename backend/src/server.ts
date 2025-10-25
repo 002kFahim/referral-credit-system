@@ -10,8 +10,18 @@ import authRoutes from "./routes/authRoutes";
 import referralRoutes from "./routes/referralRoutes";
 import purchaseRoutes from "./routes/purchaseRoutes";
 
-// Load environment variables
+// Load environment variables FIRST
 dotenv.config();
+
+// Debug environment variables
+console.log("🔧 Environment Variables Debug:");
+console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
+console.log(`   PORT: ${process.env.PORT}`);
+console.log(`   SMTP_HOST: ${process.env.SMTP_HOST}`);
+console.log(`   SMTP_USER: ${process.env.SMTP_USER}`);
+console.log(`   MONGODB_URI: ${process.env.MONGODB_URI ? "Set" : "Not set"}`);
+
+// Trigger restart
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -65,6 +75,13 @@ app.use("*", (req, res) => {
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Dynamically import emailService after environment variables are loaded
+    const { emailService } = await import("./services/emailService");
+
+    // Test email service connection
+    await emailService.testConnection();
+
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV || "development"}`);

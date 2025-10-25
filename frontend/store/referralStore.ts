@@ -4,8 +4,7 @@ interface ReferralStats {
   totalReferrals: number;
   successfulReferrals: number;
   pendingReferrals: number;
-  totalCredits: number;
-  creditsEarned: number;
+  totalCreditsEarned: number;
   conversionRate: string;
 }
 

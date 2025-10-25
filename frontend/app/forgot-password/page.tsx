@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import FormInput from "@/components/ui/FormInput";
 import Button from "@/components/ui/Button";
 import { validateForm, commonRules, ValidationErrors } from "@/lib/validation";
+import { authAPI } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -31,12 +32,15 @@ export default function ForgotPasswordPage() {
     setErrors({});
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await authAPI.forgotPassword({ email });
       setIsSubmitted(true);
       toast.success("Password reset instructions sent to your email");
     } catch (error: any) {
-      toast.error("Failed to send reset instructions");
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to send reset instructions";
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
