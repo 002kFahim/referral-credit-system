@@ -265,68 +265,147 @@ export default function DashboardPage() {
               </motion.div>
             </div>
 
-            {/* Referral Actions */}
+            {/* Quick Actions */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
               className="mb-8"
             >
-              <Card>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                    Share Your Referral Link
-                  </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-                    <code className="text-sm text-gray-800 dark:text-gray-200 break-all">
-                      {`${
-                        typeof window !== "undefined"
-                          ? window.location.origin
-                          : ""
-                      }/register?ref=${user?.referralCode}`}
-                    </code>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                    <Button
-                      onClick={copyReferralLink}
-                      loading={copyingLink}
-                      disabled={copyingLink}
-                      variant="primary"
-                    >
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Referral Actions */}
+                <Card>
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Share Your Referral Link
+                    </h3>
+                    <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
+                      <code className="text-sm text-gray-800 dark:text-gray-200 break-all">
+                        {`${
+                          typeof window !== "undefined"
+                            ? window.location.origin
+                            : ""
+                        }/register?ref=${user?.referralCode}`}
+                      </code>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      <Button
+                        onClick={copyReferralLink}
+                        loading={copyingLink}
+                        disabled={copyingLink}
+                        variant="primary"
+                        size="sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                        />
-                      </svg>
-                      Copy Link
-                    </Button>
-                    <Button onClick={shareReferralLink} variant="outline">
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        Copy Link
+                      </Button>
+                      <Button
+                        onClick={shareReferralLink}
+                        variant="outline"
+                        size="sm"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                        />
-                      </svg>
-                      Share
-                    </Button>
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
+                          />
+                        </svg>
+                        Share
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+
+                {/* Quick Navigation */}
+                <Card>
+                  <div className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      Quick Actions
+                    </h3>
+                    <div className="space-y-3">
+                      <Button
+                        onClick={() => router.push("/referrals")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                          />
+                        </svg>
+                        View All Referrals
+                      </Button>
+                      <Button
+                        onClick={() => router.push("/purchases")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                          />
+                        </svg>
+                        Purchase History
+                      </Button>
+                      <Button
+                        onClick={() => router.push("/analytics")}
+                        variant="outline"
+                        className="w-full"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                          />
+                        </svg>
+                        Analytics
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </div>
             </motion.div>
 
             {/* Recent Referrals */}
