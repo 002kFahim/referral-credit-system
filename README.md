@@ -99,7 +99,7 @@ The sequence diagram illustrates:
 
    ```env
    # Database
-   MONGODB_URI=mongodb://localhost:27017/referral-credit-system
+   MONGODB_URI=your-mongodb-uri-here
 
    # JWT
    JWT_SECRET=your-super-secret-jwt-key-here
